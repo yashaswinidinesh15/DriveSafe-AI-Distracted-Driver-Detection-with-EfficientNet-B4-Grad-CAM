@@ -1,0 +1,400 @@
+{
+  "ingestion": {
+    "status": "success",
+    "data_dir": "data/raw",
+    "statistics": {
+      "train": {
+        "total": 500,
+        "per_class": {
+          "Safe Driving": 50,
+          "Texting (Right Hand)": 50,
+          "Phone Call (Right Hand)": 50,
+          "Texting (Left Hand)": 50,
+          "Phone Call (Left Hand)": 50,
+          "Radio Adjusting": 50,
+          "Drinking": 50,
+          "Reaching Behind": 50,
+          "Hair / Makeup": 50,
+          "Talking to Passenger": 50
+        }
+      },
+      "val": {
+        "total": 120,
+        "per_class": {
+          "Safe Driving": 12,
+          "Texting (Right Hand)": 12,
+          "Phone Call (Right Hand)": 12,
+          "Texting (Left Hand)": 12,
+          "Phone Call (Left Hand)": 12,
+          "Radio Adjusting": 12,
+          "Drinking": 12,
+          "Reaching Behind": 12,
+          "Hair / Makeup": 12,
+          "Talking to Passenger": 12
+        }
+      },
+      "test": {
+        "total": 120,
+        "per_class": {
+          "Safe Driving": 12,
+          "Texting (Right Hand)": 12,
+          "Phone Call (Right Hand)": 12,
+          "Texting (Left Hand)": 12,
+          "Phone Call (Left Hand)": 12,
+          "Radio Adjusting": 12,
+          "Drinking": 12,
+          "Reaching Behind": 12,
+          "Hair / Makeup": 12,
+          "Talking to Passenger": 12
+        }
+      }
+    }
+  },
+  "processing": {
+    "status": "success",
+    "processed_dir": "data/raw",
+    "statistics": {
+      "train": {
+        "total": 500,
+        "per_class": {
+          "Safe Driving": 50,
+          "Texting (Right Hand)": 50,
+          "Phone Call (Right Hand)": 50,
+          "Texting (Left Hand)": 50,
+          "Phone Call (Left Hand)": 50,
+          "Radio Adjusting": 50,
+          "Drinking": 50,
+          "Reaching Behind": 50,
+          "Hair / Makeup": 50,
+          "Talking to Passenger": 50
+        }
+      },
+      "val": {
+        "total": 120,
+        "per_class": {
+          "Safe Driving": 12,
+          "Texting (Right Hand)": 12,
+          "Phone Call (Right Hand)": 12,
+          "Texting (Left Hand)": 12,
+          "Phone Call (Left Hand)": 12,
+          "Radio Adjusting": 12,
+          "Drinking": 12,
+          "Reaching Behind": 12,
+          "Hair / Makeup": 12,
+          "Talking to Passenger": 12
+        }
+      },
+      "test": {
+        "total": 120,
+        "per_class": {
+          "Safe Driving": 12,
+          "Texting (Right Hand)": 12,
+          "Phone Call (Right Hand)": 12,
+          "Texting (Left Hand)": 12,
+          "Phone Call (Left Hand)": 12,
+          "Radio Adjusting": 12,
+          "Drinking": 12,
+          "Reaching Behind": 12,
+          "Hair / Makeup": 12,
+          "Talking to Passenger": 12
+        }
+      }
+    }
+  },
+  "training": {
+    "status": "skipped",
+    "model_path": "models/best_model.pth"
+  },
+  "evaluation": {
+    "status": "success",
+    "test_metrics": {
+      "accuracy_top1": 0.10000000149011612,
+      "accuracy_top3": 0.49166664481163025,
+      "precision_macro": 0.012500000186264515,
+      "recall_macro": 0.10000000149011612,
+      "f1_macro": 0.02222222276031971,
+      "auroc": 0.5158178806304932,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "per_class_accuracy": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loss": 2.3080737590789795
+    }
+  },
+  "registry": {
+    "status": "gates_failed",
+    "metrics": {
+      "accuracy_top1": 0.10000000149011612,
+      "accuracy_top3": 0.49166664481163025,
+      "precision_macro": 0.012500000186264515,
+      "recall_macro": 0.10000000149011612,
+      "f1_macro": 0.02222222276031971,
+      "auroc": 0.5158178806304932,
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "per_class_accuracy": [
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "loss": 2.3080737590789795
+    }
+  }
+}

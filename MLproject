@@ -1,0 +1,53 @@
+name: distracted-driver-detection
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    parameters:
+      config: {type: str, default: "configs/config.yaml"}
+      synthetic: {type: str, default: "true"}
+      run_ablation: {type: str, default: "false"}
+    command: >
+      python mlops/pipelines/pipeline.py
+        --config {config}
+        {synthetic == 'true' ? '--synthetic' : ''}
+        {run_ablation == 'true' ? '--run-ablation' : ''}
+
+  train:
+    parameters:
+      config: {type: str, default: "configs/config.yaml"}
+      data_dir: {type: str, default: "data/processed"}
+      architecture: {type: str, default: "efficientnet_b3"}
+      epochs: {type: float, default: 30}
+      batch_size: {type: float, default: 32}
+      learning_rate: {type: float, default: 0.001}
+      dropout_rate: {type: float, default: 0.4}
+    command: >
+      python scripts/train.py
+        --config {config}
+        --data-dir {data_dir}
+        --architecture {architecture}
+        --epochs {epochs}
+        --batch-size {batch_size}
+        --lr {learning_rate}
+        --dropout {dropout_rate}
+
+  evaluate:
+    parameters:
+      model_path: {type: str, default: "models/best_model.pth"}
+      data_dir: {type: str, default: "data/processed"}
+    command: >
+      python scripts/evaluate.py
+        --model-path {model_path}
+        --data-dir {data_dir}
+
+  ablation:
+    parameters:
+      config: {type: str, default: "configs/config.yaml"}
+      data_dir: {type: str, default: "data/processed"}
+    command: >
+      python mlops/pipelines/pipeline.py
+        --config {config}
+        --skip-training
+        --run-ablation

@@ -1,0 +1,94 @@
+project:
+  name: "distracted-driver-detection"
+  version: "1.0.0"
+  description: "Deep Learning Based Distracted Driver Detection for Road Safety"
+
+data:
+  dataset_name: "state-farm-distracted-driver-detection"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  train_split: 0.70
+  val_split: 0.15
+  test_split: 0.15
+  image_size: 224
+  num_classes: 10
+  class_names:
+    c0: "Safe Driving"
+    c1: "Texting (Right Hand)"
+    c2: "Phone Call (Right Hand)"
+    c3: "Texting (Left Hand)"
+    c4: "Phone Call (Left Hand)"
+    c5: "Radio Adjusting"
+    c6: "Drinking"
+    c7: "Reaching Behind"
+    c8: "Hair/Makeup"
+    c9: "Talking to Passenger"
+  augmentation:
+    random_horizontal_flip: true
+    random_rotation: 15
+    color_jitter:
+      brightness: 0.3
+      contrast: 0.3
+      saturation: 0.2
+      hue: 0.1
+    random_affine:
+      degrees: 10
+      translate: [0.1, 0.1]
+    normalize:
+      mean: [0.485, 0.456, 0.406]
+      std: [0.229, 0.224, 0.225]
+
+model:
+  architecture: "efficientnet_b3"
+  pretrained: true
+  dropout_rate: 0.4
+  freeze_backbone_epochs: 3
+  alternatives:
+    - "efficientnet_b0"
+    - "resnet50"
+    - "mobilenet_v3_large"
+
+training:
+  epochs: 30
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: "cosine_annealing"
+  warmup_epochs: 3
+  early_stopping_patience: 7
+  loss_function: "cross_entropy_with_label_smoothing"
+  label_smoothing: 0.1
+  use_class_weights: true
+  mixed_precision: true
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 2
+
+ablation:
+  architectures: ["efficientnet_b0", "efficientnet_b3", "resnet50", "mobilenetv3_large_100"]
+  learning_rates: [0.0001, 0.001, 0.01]
+  dropout_rates: [0.2, 0.4, 0.5]
+  batch_sizes: [16, 32, 64]
+  with_augmentation: [true, false]
+  freeze_strategies: ["full_freeze", "partial_freeze", "no_freeze"]
+
+mlflow:
+  tracking_uri: "mlruns"
+  experiment_name: "distracted-driver-detection"
+  artifact_location: "mlartifacts"
+
+inference:
+  confidence_threshold: 0.5
+  top_k: 3
+  gradcam_layer: "features"
+  model_path: "models/best_model.pth"
+
+webapp:
+  host: "0.0.0.0"
+  port: 7860
+  max_image_size_mb: 10
+  allowed_extensions: ["jpg", "jpeg", "png", "bmp"]
+
+logging:
+  level: "INFO"
+  log_dir: "logs"
+  tensorboard_dir: "runs"

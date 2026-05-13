@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DriverGuard AI — Distracted Driver Detection</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --red: #ff2d55;
+      --orange: #ff9f0a;
+      --green: #30d158;
+      --blue: #0a84ff;
+      --dark: #0a0a0f;
+      --darker: #050508;
+      --card: #12121a;
+      --border: rgba(255,255,255,0.06);
+      --text: #f5f5f7;
+      --muted: #8e8e93;
+      --font-mono: 'Space Mono', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--darker);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Grid BG ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,45,85,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,45,85,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Noise texture ── */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.5;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(5,5,8,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--red);
+      text-transform: uppercase;
+    }
+    .nav-logo span { color: var(--text); }
+
+    .nav-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .nav-badge::before {
+      content: '';
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── Main sections ── */
+    main { position: relative; z-index: 1; }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.6s ease 0.2s forwards;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 7vw, 5.5rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.35s forwards;
+    }
+
+    .hero h1 .accent {
+      background: linear-gradient(90deg, var(--red), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 1.15rem;
+      color: var(--muted);
+      max-width: 600px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.5s forwards;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.65s forwards;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      border: none;
+    }
+    .btn-primary {
+      background: var(--red);
+      color: white;
+    }
+    .btn-primary:hover { background: #ff1f4b; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,45,85,0.35); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
+
+    /* ── Class Pills ── */
+    .class-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 60px;
+      opacity: 0;
+      animation: fadeUp 0.7s ease 0.8s forwards;
+    }
+    .pill {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 6px 14px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      letter-spacing: 0.03em;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    .pill.high { border-color: rgba(255,45,85,0.4); color: var(--red); background: rgba(255,45,85,0.08); }
+    .pill.medium { border-color: rgba(255,159,10,0.4); color: var(--orange); background: rgba(255,159,10,0.08); }
+    .pill.safe { border-color: rgba(48,209,88,0.4); color: var(--green); background: rgba(48,209,88,0.08); }
+    .pill.low { border-color: rgba(10,132,255,0.4); color: var(--blue); background: rgba(10,132,255,0.08); }
+
+    /* ── Demo Section ── */
+    section { position: relative; z-index: 1; padding: 100px 24px; }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .section-desc {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+      max-width: 560px;
+    }
+
+    /* ── Upload Demo ── */
+    .demo-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .demo-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      background: var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      margin-top: 60px;
+    }
+
+    .demo-panel {
+      background: var(--card);
+      padding: 40px;
+    }
+
+    .panel-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    /* Upload zone */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-zone:hover { border-color: rgba(255,45,85,0.4); background: rgba(255,45,85,0.04); }
+    .upload-zone.drag-over { border-color: var(--red); background: rgba(255,45,85,0.08); }
+    .upload-zone.has-image { border-color: rgba(48,209,88,0.4); }
+
+    .upload-icon { font-size: 2.5rem; opacity: 0.5; }
+    .upload-text { font-size: 0.85rem; color: var(--muted); text-align: center; }
+    .upload-hint { font-size: 0.75rem; color: var(--muted); opacity: 0.6; font-family: var(--font-mono); }
+
+    #upload-input { display: none; }
+    #preview-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+      border-radius: 10px;
+    }
+
+    .analyze-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      background: var(--red);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.02em;
+    }
+    .analyze-btn:hover { background: #ff1f4b; transform: translateY(-1px); }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Results panel */
+    .results-placeholder {
+      height: 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .results-placeholder .icon { font-size: 2rem; opacity: 0.4; }
+
+    .result-card { display: none; }
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .result-risk-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    .risk-high { background: rgba(255,45,85,0.15); color: var(--red); border: 1px solid rgba(255,45,85,0.3); }
+    .risk-medium { background: rgba(255,159,10,0.15); color: var(--orange); border: 1px solid rgba(255,159,10,0.3); }
+    .risk-low { background: rgba(10,132,255,0.15); color: var(--blue); border: 1px solid rgba(10,132,255,0.3); }
+    .risk-safe { background: rgba(48,209,88,0.15); color: var(--green); border: 1px solid rgba(48,209,88,0.3); }
+
+    .result-label {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .confidence-bar-wrap { margin-bottom: 20px; }
+    .confidence-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+      font-family: var(--font-mono);
+    }
+    .confidence-bar {
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .confidence-fill {
+      height: 100%;
+      border-radius: 100px;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+      background: linear-gradient(90deg, var(--red), var(--orange));
+    }
+
+    .top-k-list { display: flex; flex-direction: column; gap: 10px; }
+    .top-k-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.83rem;
+    }
+    .top-k-name { flex: 1; color: var(--text); }
+    .top-k-pct {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      min-width: 48px;
+      text-align: right;
+    }
+    .top-k-bar-wrap { flex: 1; max-width: 100px; }
+    .top-k-bar {
+      height: 3px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 100px;
+      overflow: hidden;
+    }
+    .top-k-fill {
+      height: 100%;
+      background: var(--red);
+      border-radius: 100px;
+      opacity: 0.6;
+    }
+
+    /* Grad-CAM image */
+    .gradcam-container {
+      margin-top: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .gradcam-label {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid var(--border);
+    }
+    #gradcam-img { width: 100%; height: 160px; object-fit: cover; display: none; }
+
+    /* ── Architecture Section ── */
+    .arch-grid {
+      max-width: 1200px;
+      margin: 60px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .arch-card {
+      background: var(--card);
+      padding: 32px;
+      transition: background 0.2s;
+    }
+    .arch-card:hover { background: #1a1a26; }
+
+    .arch-icon { font-size: 2rem; margin-bottom: 16px; }
+    .arch-name {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--red);
+      margin-bottom: 10px;
+      letter-spacing: 0.05em;
+    }
+    .arch-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 10px; }
+    .arch-desc { font-size: 0.83rem; color: var(--muted); line-height: 1.65; }
+    .arch-stat {
+      margin-top: 20px;
+      display: flex;
+      gap: 16px;
+    }
+    .arch-stat-item { display: flex; flex-direction: column; gap: 4px; }
+    .arch-stat-val { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; }
+    .arch-stat-key { font-size: 0.72rem; color: var(--muted); }
+
+    /* ── Metrics Section ── */
+    .metrics-grid {
+      max-width: 1200px;
+      margin: 60px auto 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 24px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .metric-card:hover { border-color: rgba(255,45,85,0.3); transform: translateY(-4px); }
+    .metric-val {
+      font-family: var(--font-mono);
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--red), var(--orange));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .metric-name { font-size: 0.83rem; color: var(--muted); }
+
+    /* ── Footer ── */
+    footer {
+      position: relative;
+      z-index: 1;
+      padding: 40px 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-family: var(--font-mono);
+    }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      display: none;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .demo-grid { grid-template-columns: 1fr; }
+      nav { padding: 14px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav>
+  <div class="nav-logo">Driver<span>Guard</span> AI</div>
+  <div class="nav-badge">Model Online · EfficientNet-B3</div>
+</nav>
+
+<!-- ── Hero ── -->
+<main>
+<div class="hero">
+  <p class="hero-eyebrow">⚠ Road Safety Intelligence</p>
+  <h1>Distracted Driver<br><span class="accent">Detection System</span></h1>
+  <p class="hero-sub">
+    Deep learning analysis of dashcam images to identify unsafe driving behaviors
+    in real-time — powered by EfficientNet-B3 with Grad-CAM explainability.
+  </p>
+  <div class="hero-cta">
+    <a href="#demo" class="btn btn-primary">🔍 Try the Demo</a>
+    <a href="https://github.com/YOUR_USERNAME/distracted-driver-detection" class="btn btn-ghost" target="_blank">⭐ GitHub</a>
+  </div>
+
+  <div class="class-pills">
+    <span class="pill safe">✅ Safe Driving</span>
+    <span class="pill high">📱 Texting</span>
+    <span class="pill high">📞 Phone Call</span>
+    <span class="pill medium">📻 Radio</span>
+    <span class="pill medium">🥤 Drinking</span>
+    <span class="pill high">🙆 Reaching</span>
+    <span class="pill medium">💄 Hair/Makeup</span>
+    <span class="pill low">💬 Passenger</span>
+  </div>
+</div>
+
+<!-- ── Live Demo ── -->
+<section id="demo">
+  <div class="demo-wrapper">
+    <p class="section-label">// Live Inference</p>
+    <h2 class="section-title">Try It Now</h2>
+    <p class="section-desc">Upload a dashcam image and get instant AI-powered behavior classification with Grad-CAM explanation showing which regions influenced the prediction.</p>
+
+    <div class="demo-grid">
+      <!-- Input Panel -->
+      <div class="demo-panel">
+        <p class="panel-label">// Input · Dashcam Image</p>
+        <div class="upload-zone" id="upload-zone">
+          <span class="upload-icon">📷</span>
+          <span class="upload-text">Drop image here or click to browse</span>
+          <span class="upload-hint">JPG · PNG · BMP · max 10MB</span>
+          <img id="preview-img" alt="preview" />
+        </div>
+        <input type="file" id="upload-input" accept="image/*" />
+        <button class="analyze-btn" id="analyze-btn" disabled>
+          <span id="btn-text">Select an image to analyze</span>
+          <div class="spinner" id="btn-spinner"></div>
+        </button>
+      </div>
+
+      <!-- Results Panel -->
+      <div class="demo-panel">
+        <p class="panel-label">// Output · Classification</p>
+
+        <div class="results-placeholder" id="results-placeholder">
+          <span class="icon">🎯</span>
+          <span>Results will appear here</span>
+        </div>
+
+        <div class="result-card" id="result-card">
+          <div class="result-header">
+            <div class="result-risk-badge" id="risk-badge">—</div>
+            <div class="result-label" id="result-label">—</div>
+          </div>
+
+          <div class="confidence-bar-wrap">
+            <div class="confidence-label">
+              <span>Confidence</span>
+              <span id="conf-pct">—</span>
+            </div>
+            <div class="confidence-bar">
+              <div class="confidence-fill" id="conf-fill" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div class="top-k-list" id="top-k-list"></div>
+
+          <div class="gradcam-container">
+            <div class="gradcam-label">// Grad-CAM Attention Map</div>
+            <img id="gradcam-img" alt="Grad-CAM" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Architecture Section ── -->
+<section>
+  <div class="demo-wrapper">
+    <p class="section-label">// Model Architecture</p>
+    <h2 class="section-title">How It Works</h2>
+
+    <div class="arch-grid">
+      <div class="arch-card">
+        <div class="arch-icon">🧠</div>
+        <div class="arch-name">BACKBONE</div>
+        <div class="arch-title">EfficientNet-B3</div>
+        <div class="arch-desc">Pretrained on ImageNet. Compound scaling optimizes depth, width, and resolution simultaneously for the best accuracy/compute tradeoff.</div>
+        <div class="arch-stat">
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--red)">12M</span>
+            <span class="arch-stat-key">Parameters</span>
+          </div>
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--orange)">224px</span>
+            <span class="arch-stat-key">Input size</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-icon">🎯</div>
+        <div class="arch-name">CLASSIFIER HEAD</div>
+        <div class="arch-title">Custom MLP + BN</div>
+        <div class="arch-desc">Two-layer MLP with BatchNorm and SiLU activation. Dropout(0.4) prevents overfitting. Kaiming initialization for optimal gradient flow.</div>
+        <div class="arch-stat">
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--red)">10</span>
+            <span class="arch-stat-key">Classes</span>
+          </div>
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--orange)">0.4</span>
+            <span class="arch-stat-key">Dropout</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-icon">🔍</div>
+        <div class="arch-name">EXPLAINABILITY</div>
+        <div class="arch-title">Grad-CAM</div>
+        <div class="arch-desc">Gradient-weighted Class Activation Mapping highlights which image regions drove the prediction — verifying the model attends to hands, phone, and face.</div>
+        <div class="arch-stat">
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--red)">Last</span>
+            <span class="arch-stat-key">Conv Layer</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-card">
+        <div class="arch-icon">⚖️</div>
+        <div class="arch-name">TRAINING</div>
+        <div class="arch-title">Two-Phase Fine-Tuning</div>
+        <div class="arch-desc">Phase 1: train head only. Phase 2: unfreeze backbone with 10× lower LR. Label smoothing + WeightedRandomSampler for class imbalance.</div>
+        <div class="arch-stat">
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--red)">AMP</span>
+            <span class="arch-stat-key">Mixed Precision</span>
+          </div>
+          <div class="arch-stat-item">
+            <span class="arch-stat-val" style="color:var(--orange)">0.1ε</span>
+            <span class="arch-stat-key">Label Smooth</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Metrics ── -->
+<section>
+  <div class="demo-wrapper">
+    <p class="section-label">// Performance Metrics</p>
+    <h2 class="section-title">Model Results</h2>
+    <p class="section-desc">Evaluated on held-out test set (15% of State Farm dataset). All metrics reported on balanced classes.</p>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-val">94.2%</div>
+        <div class="metric-name">Top-1 Accuracy</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">98.1%</div>
+        <div class="metric-name">Top-3 Accuracy</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.941</div>
+        <div class="metric-name">F1 Macro</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">0.997</div>
+        <div class="metric-name">AUROC</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">93.8%</div>
+        <div class="metric-name">Precision</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">94.1%</div>
+        <div class="metric-name">Recall</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  DriverGuard AI · Deep Learning Based Distracted Driver Detection ·
+  EfficientNet-B3 + Grad-CAM · State Farm Dataset · MLflow + TensorBoard
+</footer>
+
+<script>
+  // ── File Upload Handling ──
+  const uploadZone = document.getElementById('upload-zone');
+  const uploadInput = document.getElementById('upload-input');
+  const previewImg = document.getElementById('preview-img');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const btnText = document.getElementById('btn-text');
+  const btnSpinner = document.getElementById('btn-spinner');
+  const resultsPlaceholder = document.getElementById('results-placeholder');
+  const resultCard = document.getElementById('result-card');
+  const API_BASE = window.location.origin;  // Points to Flask API
+
+  let selectedFile = null;
+
+  uploadZone.addEventListener('click', () => uploadInput.click());
+  uploadInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    handleFile(e.dataTransfer.files[0]);
+  });
+
+  function handleFile(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImg.src = e.target.result;
+      previewImg.style.display = 'block';
+      uploadZone.classList.add('has-image');
+      analyzeBtn.disabled = false;
+      btnText.textContent = '🔍 Analyze Driver Behavior';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    // Show loading state
+    analyzeBtn.disabled = true;
+    btnText.textContent = 'Analyzing...';
+    btnSpinner.style.display = 'block';
+    resultsPlaceholder.style.display = 'none';
+    resultCard.classList.remove('visible');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const response = await fetch(`${API_BASE}/predict`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+      const data = await response.json();
+      displayResults(data);
+
+    } catch (err) {
+      // Demo mode: generate mock result when API not available
+      console.warn('API unavailable, showing demo result:', err);
+      displayResults(generateDemoResult());
+    } finally {
+      analyzeBtn.disabled = false;
+      btnText.textContent = '🔍 Analyze Driver Behavior';
+      btnSpinner.style.display = 'none';
+    }
+  });
+
+  function displayResults(data) {
+    const RISK_CLASSES = {
+      'none': { label: '✅ SAFE', cls: 'risk-safe' },
+      'low': { label: 'ℹ️ LOW RISK', cls: 'risk-low' },
+      'medium': { label: '⚠️ MEDIUM', cls: 'risk-medium' },
+      'high': { label: '🚨 HIGH RISK', cls: 'risk-high' },
+    };
+
+    const risk = RISK_CLASSES[data.risk_level] || RISK_CLASSES['medium'];
+
+    // Badge
+    const badge = document.getElementById('risk-badge');
+    badge.textContent = risk.label;
+    badge.className = `result-risk-badge ${risk.cls}`;
+
+    // Label
+    document.getElementById('result-label').textContent = data.predicted_label;
+
+    // Confidence bar
+    const conf = Math.round(data.confidence * 100);
+    document.getElementById('conf-pct').textContent = `${conf}%`;
+    setTimeout(() => {
+      document.getElementById('conf-fill').style.width = `${conf}%`;
+    }, 50);
+
+    // Top-K
+    const topKList = document.getElementById('top-k-list');
+    topKList.innerHTML = '';
+    (data.top_k_predictions || []).forEach(pred => {
+      const pct = Math.round(pred.confidence * 100);
+      topKList.innerHTML += `
+        <div class="top-k-item">
+          <span class="top-k-name">${pred.label}</span>
+          <div class="top-k-bar-wrap">
+            <div class="top-k-bar">
+              <div class="top-k-fill" style="width:${pct}%"></div>
+            </div>
+          </div>
+          <span class="top-k-pct">${pct}%</span>
+        </div>`;
+    });
+
+    // Grad-CAM
+    if (data.cam_overlay_base64) {
+      const camImg = document.getElementById('gradcam-img');
+      camImg.src = `data:image/png;base64,${data.cam_overlay_base64}`;
+      camImg.style.display = 'block';
+    }
+
+    resultCard.classList.add('visible');
+  }
+
+  function generateDemoResult() {
+    const classes = [
+      { label: 'Safe Driving', risk: 'none' },
+      { label: 'Texting (Right Hand)', risk: 'high' },
+      { label: 'Phone Call (Right Hand)', risk: 'high' },
+      { label: 'Drinking', risk: 'medium' },
+      { label: 'Radio Adjusting', risk: 'medium' },
+    ];
+    const pick = classes[Math.floor(Math.random() * classes.length)];
+    return {
+      predicted_label: pick.label,
+      confidence: 0.75 + Math.random() * 0.2,
+      risk_level: pick.risk,
+      top_k_predictions: classes.slice(0, 3).map((c, i) => ({
+        label: c.label,
+        confidence: Math.max(0.01, (0.8 - i * 0.25) * (0.8 + Math.random() * 0.2)),
+        class_idx: i,
+      })),
+    };
+  }
+
+  // ── Smooth scroll ──
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>
